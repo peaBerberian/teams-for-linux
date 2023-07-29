@@ -2,8 +2,20 @@
 (function () {
 	const { ipcRenderer } = require('electron');
 	const ActivityManager = require('./notifications/activityManager');
-
 	let config;
+
+	const classicNotification = window.Notification;
+	if (
+		classicNotification.permission !== 'denied' &&
+		classicNotification.permission !== 'granted'
+	) {
+		classicNotification.requestPermission().then((permission) => {
+			if (permission === 'granted') {
+				console.log('Notification permission granted');
+			}
+		});
+	}
+
 	ipcRenderer.invoke('getConfig').then(mainConfig => {
 		config = mainConfig;
 		initializeModules(config, ipcRenderer);
@@ -46,7 +58,6 @@
 		}
 	});
 
-	let classicNotification = window.Notification;
 	class CustomNotification {
 		constructor(title, options) {
 			if (config.disableNotifications) {
@@ -63,7 +74,7 @@
 			console.log('Requesting application to play sound');
 			ipcRenderer.invoke('play-notification-sound', notifSound);
 			console.log('Continues to default notification workflow');
-			return new classicNotification(title, options);
+			return new classicNotification(title, { body: options.body, icon: options.icon });
 		}
 		static requestPermission(callback) {
 			if (typeof (callback) == 'function') {
